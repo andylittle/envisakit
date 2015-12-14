@@ -3,5 +3,6 @@
 	"mid": "abcdefghijklmnopqrstuvwxyz01234567890000",
 	"did": "000000000000",
 	"partition": "1",
-	"ignore": ["instantarm", "maxarm", "bypass", "togglechime", "test",     "code"]
+	"ignore": ["instantarm", "maxarm", "bypass", "togglechime", "test",     "code"],
+	"#only": ["arm", "disarm"]
 }

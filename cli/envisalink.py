@@ -405,10 +405,32 @@ def main():
 
     # Load optional configurations
     try:
+        # CLI Commands to ignore
         ignore_cli_commands = config["ignore"]
+        # CLI commands -> EZ commands
         cli_commands = dict([(i[2], i[0]) for i in EZMOBILE_COMMANDS])
+        # EZ commands to ignore
         ignore_commands = [cli_commands[i] for i in ignore_cli_commands]
+        # Add to object
         ma.ignoreCommands += ignore_commands
+    except:
+        pass
+
+    try:
+        # CLI commands to keep
+        only_cli_commands = config["only"]
+        # CLI commands -> EZ commands
+        cli_commands = dict([(i[2], i[0]) for i in EZMOBILE_COMMANDS])
+        # EZ commands to keep
+        only_commands = [cli_commands[i] for i in only_cli_commands]
+        # Result list to keep
+        ignore_commands = []
+        for i in [i[0] for i in EZMOBILE_COMMANDS]:
+            if i not in only_commands:
+                ignore_commands += [i]
+        # Add to object
+        ma.ignoreCommands += ignore_commands
+
     except:
         pass
 
