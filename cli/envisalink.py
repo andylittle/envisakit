@@ -8,7 +8,7 @@ import getopt
 import json
 
 #
-# Command IDs
+# Recognized Command IDs
 #
 
 COMMAND_UNKNOWN = 0
@@ -22,6 +22,10 @@ COMMAND_ARM_AWAY = 100
 COMMAND_ARM_STAY = 101
 COMMAND_ARM_INSTANT = 102
 COMMAND_ARM_MAX = 103
+
+COMMAND_BUILTINS = 500
+COMMAND_GETSTATUS = 501
+COMMAND_HELP = 502
 
 #
 # EZMOBILE commands to ignore
@@ -50,6 +54,17 @@ EZMOBILE_COMMANDS = (
     ("custom", COMMAND_CUSTOM, "sequence", "Enter a custom sequence"),
 )
 
+#
+# Commands supported by the script
+#
+# Format: (CLI Command, Command ID, CLI Help String)
+#
+
+BUILTIN_COMMANDS = (
+    ("status", COMMAND_GETSTATUS, "Gets the status of the partition"),
+    ("help", COMMAND_HELP, "Lists all possible commands"),
+)
+
 
 class MobileAlarm:
 
@@ -64,6 +79,7 @@ class MobileAlarm:
         self.commandMethods = {}
         self.commandFormData = {}
         self.commandFormSlots = {}
+        self.ignoreCommands = list(EZMOBILE_COMMANDS_IGNORE)
 
     @classmethod
     def _fetch_page_dom(self, url):
@@ -178,7 +194,7 @@ class MobileAlarm:
         for link in links:
             link_string = link.string.lower()
 
-            if link_string in EZMOBILE_COMMANDS_IGNORE:
+            if link_string in self.ignoreCommands:
                 continue
 
             if link_string in match_strings:
@@ -216,10 +232,15 @@ class MobileAlarm:
 
         '''
         commands = dict([(i[2], i[1]) for i in EZMOBILE_COMMANDS])
+        builtins = dict([(i[0], i[1]) for i in BUILTIN_COMMANDS])
+
         try:
             return commands[command_argument]
         except KeyError:
-            return COMMAND_UNKNOWN
+            try:
+                return builtins[command_argument]
+            except KeyError:
+                return COMMAND_UNKNOWN
 
     def discovered_command_help_and_labels(self):
         '''
@@ -229,7 +250,16 @@ class MobileAlarm:
         '''
         script_commands = dict([(i[1], i[2]) for i in EZMOBILE_COMMANDS])
         script_command_help = dict([(i[1], i[3]) for i in EZMOBILE_COMMANDS])
-        return [(script_commands[i], script_command_help[i]) for i in self.discoveredCommands]
+        items = [(i[0], i[2]) for i in BUILTIN_COMMANDS]
+        items += [(script_commands[i], script_command_help[i]) for i in self.discoveredCommands]
+        return items
+
+    def _issue_builtin(self, command_id, **kwargs):
+        if command_id == COMMAND_HELP:
+            help(self)
+            exit(0)
+        else:
+            print "not implemented"
 
     def issue(self, command_id, **kwargs):
         '''
@@ -243,6 +273,9 @@ class MobileAlarm:
         if command_id == COMMAND_UNKNOWN:
             print "[Error] Cannot issue unknown command"
             return None
+
+        if command_id > COMMAND_BUILTINS:
+            return self._issue_builtin(command_id, **kwargs)
 
         # Get the request method and action from the discovery cache
         command_url = self.commandActions[command_id]
@@ -299,6 +332,11 @@ def help(ma=None):
     print ""
     for (action, label) in ma.discovered_command_help_and_labels():
         print "* %(action)s - %(help)s" % {'action': action, 'help': label}
+
+    if len(ma.ignoreCommands) > len(EZMOBILE_COMMANDS_IGNORE):
+        print ""
+        print "Note: Some commands have been hidden by your config file."
+        print ""
 
 
 def main():
@@ -365,10 +403,14 @@ def main():
     # Initialize mobile alarm object
     ma = MobileAlarm(CONFIG_URL, CONFIG_MID, CONFIG_DID, CONFIG_PARTITION)
 
-    # Discover alarm commands
-    print "Detecting alarm commands..."
-    ma.discover_commands()
-    ma.discover_arm_commands()
+    # Load optional configurations
+    try:
+        ignore_cli_commands = config["ignore"]
+        cli_commands = dict([(i[2], i[0]) for i in EZMOBILE_COMMANDS])
+        ignore_commands = [cli_commands[i] for i in ignore_cli_commands]
+        ma.ignoreCommands += ignore_commands
+    except:
+        pass
 
     # If we're not asked for a command, print usage
     if len(sys.argv) < 2:
@@ -377,6 +419,20 @@ def main():
 
     # Determine requested command
     command_id = ma.determine_command(sys.argv[1])
+
+    # If we don't recognize the command (i.e., not a builtin command), detect possible commands
+    if command_id == COMMAND_UNKNOWN or command_id == COMMAND_HELP:
+
+        # Discover alarm commands
+        print "Detecting commands..."
+        ma.discover_commands()
+
+        # Discover arming commands
+        print "Detecting arm types..."
+        ma.discover_arm_commands()
+
+        # Re-determine requested command, now that we have the full set
+        command_id = ma.determine_command(sys.argv[1])
 
     # If unknown command, print usage
     if command_id == COMMAND_UNKNOWN:
