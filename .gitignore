@@ -1,6 +1,9 @@
 # Configuration files
 envisalink-config.json
 
+# Virtualenv
+venv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
