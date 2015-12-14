@@ -27,6 +27,8 @@ COMMAND_BUILTINS = 500
 COMMAND_GETSTATUS = 501
 COMMAND_HELP = 502
 
+STATUS_UNKNOWN = "unknown"
+
 #
 # EZMOBILE commands to ignore
 #
@@ -135,6 +137,20 @@ class MobileAlarm:
             'mid': self.mobileIdentifier,
             'did': self.deviceIdentifier,
             'partition': self.partition,
+        }
+        return MobileAlarm._fetch_page_dom(url=url)
+
+    def _fetch_partition_page(self):
+        '''
+
+        Fetches the EZMOBILE arm command page and returns the response
+        in a BeautifulSoup HTML DOM object.
+
+        '''
+        url = '%(url)s?mid=%(mid)s&did=%(did)s&action=s' % {
+            'url': self.url,
+            'mid': self.mobileIdentifier,
+            'did': self.deviceIdentifier,
         }
         return MobileAlarm._fetch_page_dom(url=url)
 
@@ -254,12 +270,42 @@ class MobileAlarm:
         items += [(script_commands[i], script_command_help[i]) for i in self.discoveredCommands]
         return items
 
+    def _determine_status(self):
+        try:
+            partition_page = self._fetch_partition_page()
+        except:
+            return STATUS_UNKNOWN
+
+        partition_headers = partition_page.findAll('h3')
+        status_header_parent = None
+
+        for header in partition_headers:
+            if header.string.lower().strip() == "partition " + str(self.partition):
+                status_header_parent = header.parent
+                break
+
+        if status_header_parent is None:
+            return STATUS_UNKNOWN
+
+        status = status_header_parent.find('p').string.lower().strip()
+        return status
+
     def _issue_builtin(self, command_id, **kwargs):
+
         if command_id == COMMAND_HELP:
             help(self)
             exit(0)
+
+        elif command_id == COMMAND_GETSTATUS:
+            status = self._determine_status()
+            print status
+            if status != STATUS_UNKNOWN:
+                exit(0)
+            else:
+                exit(1)
+
         else:
-            print "not implemented"
+            print "bad command"
 
     def issue(self, command_id, **kwargs):
         '''
@@ -442,8 +488,13 @@ def main():
     # Determine requested command
     command_id = ma.determine_command(sys.argv[1])
 
-    # If we don't recognize the command (i.e., not a builtin command), detect possible commands
-    if command_id == COMMAND_UNKNOWN or command_id == COMMAND_HELP:
+    # If unknown command, print usage
+    if command_id == COMMAND_UNKNOWN:
+        help(ma)
+        exit(1)
+
+    # If the command is within EZMOBILE_COMMANDS, then we need to discover before issuing.
+    if command_id in [i[1] for i in EZMOBILE_COMMANDS] or command_id == COMMAND_HELP:
 
         # Discover alarm commands
         print "Detecting commands..."
@@ -452,14 +503,6 @@ def main():
         # Discover arming commands
         print "Detecting arm types..."
         ma.discover_arm_commands()
-
-        # Re-determine requested command, now that we have the full set
-        command_id = ma.determine_command(sys.argv[1])
-
-    # If unknown command, print usage
-    if command_id == COMMAND_UNKNOWN:
-        help(ma)
-        exit(1)
 
     # Issue the command!
     ma.issue(command_id, **extra_fields)
