@@ -326,7 +326,7 @@ def main():
     try:
         config = json.load(open(config_file_name))
     except IOError:
-        print "Error: Failed to open %s - use -c to specify a custom config file."
+        print "Error: Failed to open %s - use -c to specify a custom config file." % config_file_name
         help(None)
         exit(1)
 
