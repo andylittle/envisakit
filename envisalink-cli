@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Get current directory
+# Source: http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if ! [ -d "$DIR/venv" ] ; then
+	echo "You must set up your virtualenv in $DIR/venv before running this command."
+	exit 1
+fi
+
+# Activate the virtualenv
+source $DIR/venv/bin/activate
+
+# Move pwd to the cli directory
+pushd $DIR/cli &> /dev/null
+
+# Issue command
+./envisalink.py $@
+
+# Undo pwd change
+popd &> /dev/null

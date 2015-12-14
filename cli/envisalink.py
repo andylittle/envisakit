@@ -350,7 +350,7 @@ def main():
     ma.discover_arm_commands()
 
     # If we're not asked for a command, print usage
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         help(ma)
         exit(1)
 
