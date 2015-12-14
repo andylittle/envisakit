@@ -285,16 +285,20 @@ def help(ma=None):
 
     '''
     print ""
-    print "Usage: %(script)s: command code [-c/--config config_file]" % {'script': sys.argv[0]}
+    print "Usage: %(script)s COMMAND [-p PIN] [-c config_file] [-f key=value]" % {'script': sys.argv[0]}
+    print ""
+    # print "-p PIN: Specify the 4-digit PIN used to issue the command (if required for the command)"
+    # print "-c config_file: Specify a configuration file (see envisalink-config.json.sample for more details)"
+    # print "-f key=value: Specify additional fields that may be required for the command, e.g., -f sequence=12345"
+    # print ""
 
     if ma is None:
         return
 
-    print "--"
     print "Detected commands: "
-    print "***"
+    print ""
     for (action, label) in ma.discovered_command_help_and_labels():
-        print "%(action)s - %(help)s" % {'action': action, 'help': label}
+        print "* %(action)s - %(help)s" % {'action': action, 'help': label}
 
 
 def main():
@@ -306,7 +310,7 @@ def main():
 
     # Get any options on the command line
     try:
-        opts, args = getopt.getopt(sys.argv[3:], "c:", ["config"])
+        opts, args = getopt.getopt(sys.argv[2:], "hp:c:f:", ["pin", "config", "field"])
     except getopt.GetoptError as err:
         print str(err)
         help(None)
@@ -315,10 +319,27 @@ def main():
     # Default configuration file name
     config_file_name = "envisalink-config.json"
 
+    # Extra fields
+    extra_fields = {}
+
     # Change configuration file name if specified
     for option, value in opts:
-        if option == "-c":
+
+        if option == "-p":
+            if len(value) != 4:
+                assert False, "PIN must be 4 digits"
+            extra_fields["pin"] = value
+
+        elif option == "-c":
             config_file_name = value
+
+        elif option == "-f":
+            keyvalue = value.split('=')
+
+            if len(keyvalue) != 2:
+                assert False, "fields must be in key=value format"
+
+            extra_fields[keyvalue[0]] = keyvalue[1]
         else:
             assert False, "unknown option"
 
@@ -350,18 +371,12 @@ def main():
     ma.discover_arm_commands()
 
     # If we're not asked for a command, print usage
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         help(ma)
         exit(1)
 
     # Determine requested command
     command_id = ma.determine_command(sys.argv[1])
-    code = sys.argv[2]
-
-    if len(code) != 4:
-        print "Error: Specify a valid code"
-        help(ma)
-        exit(1)
 
     # If unknown command, print usage
     if command_id == COMMAND_UNKNOWN:
@@ -369,7 +384,7 @@ def main():
         exit(1)
 
     # Issue the command!
-    ma.issue(command_id, pin=code)
+    ma.issue(command_id, **extra_fields)
     exit(0)
 
 
