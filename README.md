@@ -2,6 +2,8 @@
 
 EnvisaKit is a command-line interface for the [Eyez-On Envisalink](http://www.eyezon.com) module. It allows you to arm and disarm the alarm system, as well as custom commands.
 
+**Note**: This project may not be compatible with DSC security panels at this time.
+
 # HomeKit and Siri
 
 Connect EnvisaKit to HomeKit in order to control your alarm panel through Siri.
