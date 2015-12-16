@@ -17,7 +17,15 @@ source $DIR/venv/bin/activate
 pushd $DIR/cli &> /dev/null
 
 # Issue command
-./envisakit.py $@
+if [ -f "$DIR/cli/envisalink-ademco-config.json" ] ; then
+	>&2 echo "Using ademco interface..."
+	./ademco.py $@
+else
+	>&2 echo "Using EZMobile interface..."
+	./envisakit.py $@
+fi
+
+
 
 # Undo pwd change
 popd &> /dev/null
