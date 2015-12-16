@@ -30,8 +30,10 @@ def handler_status(server):
             print "stay armed"
         elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_READY):
             print "ready"
-        else:
-            print "fault/trouble"
+        elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_IN_ALARM) or \
+            last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ALARM_IN_MEMORY) or \
+                last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ALARM_FIRE):
+            print "alarm"
         return True
     else:
         return False
