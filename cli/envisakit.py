@@ -35,12 +35,6 @@ STATUS_UNKNOWN = "unknown"
 
 EZMOBILE_COMMANDS_IGNORE = [
     "cancel",
-
-    # These commands are not fully supported yet
-    "bypass",
-    "togglechime"
-    "test",
-    "code",
 ]
 
 #
