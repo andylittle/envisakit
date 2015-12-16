@@ -325,8 +325,12 @@ class MobileAlarm:
             return self._issue_builtin(command_id, **kwargs)
 
         # Get the request method and action from the discovery cache
-        command_url = self.commandActions[command_id]
-        command_method = self.commandMethods[command_id]
+        try:
+            command_url = self.commandActions[command_id]
+            command_method = self.commandMethods[command_id]
+        except KeyError:
+            print "Error: could not find the requested command. Did you ignore this command in your config file?"
+            sys.exit(1)
 
         # Our form data
         command_form = {}
