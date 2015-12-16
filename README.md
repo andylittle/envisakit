@@ -13,6 +13,7 @@ Connect EnvisaKit to HomeKit in order to control your alarm panel through Siri.
 # Installation
 
 ```
+
 # Clone the repository
 $ git clone 'https://github.com/mklips0/envisakit.git'
 
@@ -26,18 +27,66 @@ $ source venv/bin/activate
 # Install python packages
 $ pip install -r requirements.txt
 
-# Configure EnvisaKit (see Configuration section)
+# EITHER
+# (1) Configure EnvisaKit for EZMOBILE (see Configuration section)
 $ cp cli/envisalink-config.json.sample cli/envisalink-config.json
 $ nano envisalink-config.json
+
+# OR
+# (2) Configure EnvisaKit for Ademco (see Configuration section)
+$ cp cli/envisalink-ademco-config.json.sample cli/envisalink-ademco-config.json
+$ nano envisalink-ademco-config.json
+
+```
+
+# Usage
+
+```
+
+# Arming the system with code 1234
+$ ./envisakit-cli arm -p 1234
+Detecting commands...
+Detecting arm types...
+Issuing command...
+
+# Disarming the system with code 1234
+$ ./envisakit-cli disarm -p 1234
+Detecting commands...
+Detecting arm types...
+Issuing command...
+
+# Getting the status of the system
+$ ./envisakit-cli status
+ready
 
 ```
 
 
 # Configuration
 
-Configuration sample:
+EnvisaKit works through either the Ademco TPI (preferred) or the EZMOBILE interface.
+
+Configuration sample for Ademco TPI (envisalink-ademco-config.json):
 
 ```
+
+{
+	"host": "envisalink",
+	"port": 4025,
+	"password": "1234"
+}
+
+```
+
+* "host": Hostname or IP of the Envisalink module
+* "port": Port for the Envisalink TPI (default: 4025)
+* "password": Password for the Envisalink TPI (default: "user")
+
+
+Configuration sample for EZMOBILE (envisalink-config.json):
+
+```
+
 {
 	"mobile-url": "https://www.eyez-on.com/EZMOBILE/index.php",
 	"mid": "abcdefghijklmnopqrstuvwxyz01234567890000",

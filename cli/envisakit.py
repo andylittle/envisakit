@@ -34,7 +34,13 @@ STATUS_UNKNOWN = "unknown"
 #
 
 EZMOBILE_COMMANDS_IGNORE = [
-    "cancel"
+    "cancel",
+
+    # These commands are not fully supported yet
+    "bypass",
+    "togglechime"
+    "test",
+    "code",
 ]
 
 #
@@ -49,10 +55,10 @@ EZMOBILE_COMMANDS = (
     ("instant arm", COMMAND_ARM_INSTANT, "instantarm", "Unknown"),
     ("max", COMMAND_ARM_MAX, "maxarm", "Unknown"),
     ("off", COMMAND_DISARM, "disarm", "Disarms the entire partition"),
-    # ("bypass", COMMAND_BYPASS, "bypass", "Bypasses a zone"),
-    # ("toggle chime", COMMAND_TOGGLE_CHIME, "togglechime", "Unknown"),
-    # ("test", COMMAND_TEST, "test", "Tests the partition"),
-    # ("code", COMMAND_CODE, "code", "Configure a code"),
+    ("bypass", COMMAND_BYPASS, "bypass", "Bypasses a zone"),
+    ("toggle chime", COMMAND_TOGGLE_CHIME, "togglechime", "Unknown"),
+    ("test", COMMAND_TEST, "test", "Tests the partition"),
+    ("code", COMMAND_CODE, "code", "Configure a code"),
     ("custom", COMMAND_CUSTOM, "sequence", "Enter a custom sequence"),
 )
 
