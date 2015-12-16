@@ -71,6 +71,7 @@ BUILTIN_COMMANDS = (
 class MobileAlarm:
 
     def __init__(self, url, mid, did, partition):
+
         self.url = url
         self.mobileIdentifier = mid
         self.deviceIdentifier = did

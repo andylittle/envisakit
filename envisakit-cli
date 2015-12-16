@@ -17,7 +17,7 @@ source $DIR/venv/bin/activate
 pushd $DIR/cli &> /dev/null
 
 # Issue command
-./envisalink.py $@
+./envisakit.py $@
 
 # Undo pwd change
 popd &> /dev/null
