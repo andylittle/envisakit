@@ -36,6 +36,7 @@ class AdemcoServer:
 
     def __init__(self):
         self.code = None
+        self.config_force = False
         self.responses = {}
         self.clear_responses()
 

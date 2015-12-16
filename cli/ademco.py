@@ -105,7 +105,7 @@ def main():
                 if command_callback is None:
 
                     ready = conn.is_ready_for_command(command)
-                    if ready is True:
+                    if ready is True or conn.config_force:
                         # Issue the command and determine the post-command handling
                         command_callback = process_cli_command(conn, command)
                     elif ready is False:
@@ -138,7 +138,7 @@ def usage(exit_code):
 
     '''
     print >> sys.stderr, ""
-    print >> sys.stderr, "Usage: %(script)s COMMAND [-p PIN] [-c config_file]" % {'script': sys.argv[0]}
+    print >> sys.stderr, "Usage: %(script)s COMMAND [-p PIN] [-c config_file] [-f]" % {'script': sys.argv[0]}
     print >> sys.stderr, ""
     print >> sys.stderr, "Available commands: " + ", ".join([i[1] for i in AdemcoServer.ADEMCO_COMMANDS])
     sys.exit(exit_code)
@@ -148,7 +148,7 @@ def process_cli_arguments(ademcoServer):
 
     # Get any options on the command line
     try:
-        opts, args = getopt.getopt(sys.argv[2:], "p:c:", ["pin", "config"])
+        opts, args = getopt.getopt(sys.argv[2:], "fp:c:", ["pin", "config"])
     except getopt.GetoptError as err:
         print >> sys.stderr, str(err)
         usage(EXIT_BAD_REQUEST)
@@ -163,6 +163,9 @@ def process_cli_arguments(ademcoServer):
             if len(value) != 4:
                 assert False, "PIN must be 4 digits"
             ademcoServer.code = value
+
+        elif option == "-f":
+            ademcoServer.config_force = True
 
         elif option == "-c":
             config_file_name = value
