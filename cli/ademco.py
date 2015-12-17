@@ -17,60 +17,86 @@ EXIT_BAD_REQUEST = 1
 EXIT_KEYBOARD = 2
 EXIT_ALARM_NOT_READY = 10
 
+COMMAND_TIMEOUT = 20
 
-def handler_status(server):
+
+def handler_status(server, sec):
 
     last_update = server.last_response_of_type(AdemcoResponse.RESPONSE_UPDATE)
     if last_update is not None:
-        if last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ARMED):
-            print "max armed"
-        elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ARMED_AWAY):
-            print "away armed"
-        elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ARMED_STAY):
-            print "stay armed"
-        elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_READY):
-            print "ready"
-        elif last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_IN_ALARM) or \
-            last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ALARM_IN_MEMORY) or \
-                last_update.update_has_flags(AdemcoResponse.UPDATE_FLAG_ALARM_FIRE):
-            print "alarm"
+
+        if server.config_use_json:
+            print json.dumps(last_update.update_dict())
+        else:
+            print last_update.update_summary()
+
         return True
     else:
-        return False
+        return None
 
 
-def handler_ensure_armed(server):
-
-    last_update = server.last_response_of_type(AdemcoResponse.RESPONSE_UPDATE)
-    if last_update is not None:
-        return last_update.update_is_armed()
-    else:
-        return False
-
-
-def handler_ensure_disarmed(server):
+def handler_ensure_armed(server, sec):
 
     last_update = server.last_response_of_type(AdemcoResponse.RESPONSE_UPDATE)
-    if last_update is not None:
-        return not last_update.update_is_armed()
+
+    if last_update is None:
+        return None
     else:
-        return False
+        if last_update.update_is_armed():
+            return True
+        else:
+            if sec < COMMAND_TIMEOUT:
+                return None
+            else:
+                return False
+
+
+def handler_ensure_disarmed(server, sec):
+
+    last_update = server.last_response_of_type(AdemcoResponse.RESPONSE_UPDATE)
+
+    if last_update is None:
+        return None
+    else:
+        if not last_update.update_is_armed():
+            return True
+        else:
+            if sec < COMMAND_TIMEOUT:
+                return None
+            else:
+                return False
+
+
+def handler_ensure_bypass(server, sec):
+
+    last_update = server.last_response_of_type(AdemcoResponse.RESPONSE_UPDATE)
+    
+    if last_update is None:
+        return None
+    else:
+        if last_update.update_is_bypass():
+            return True
+        else:
+            if sec < COMMAND_TIMEOUT:
+                return None
+            else:
+                return False
+
+
+def handler_none(server, sec):
+    return True
 
 
 COMMAND_HANDLERS = (
     (AdemcoServer.COMMAND_ARM_AWAY, handler_ensure_armed),
     (AdemcoServer.COMMAND_ARM_STAY, handler_ensure_armed),
+    (AdemcoServer.COMMAND_ARM_NIGHT, handler_ensure_armed),
     (AdemcoServer.COMMAND_ARM_INSTANT, handler_ensure_armed),
     (AdemcoServer.COMMAND_ARM_MAX, handler_ensure_armed),
     (AdemcoServer.COMMAND_DISARM, handler_ensure_disarmed),
-)
-
-COMMAND_INITIAL_STATE = (
-    (AdemcoServer.COMMAND_ARM_AWAY, AdemcoResponse.UPDATE_FLAG_READY),
-    (AdemcoServer.COMMAND_ARM_STAY, AdemcoResponse.UPDATE_FLAG_READY),
-    (AdemcoServer.COMMAND_ARM_INSTANT, AdemcoResponse.UPDATE_FLAG_READY),
-    (AdemcoServer.COMMAND_ARM_MAX, AdemcoResponse.UPDATE_FLAG_READY),
-    (AdemcoServer.COMMAND_DISARM, 0),
+    (AdemcoServer.COMMAND_BYPASS, handler_ensure_bypass),
+    (AdemcoServer.COMMAND_TOGGLE_CHIME, handler_none),
+    (AdemcoServer.COMMAND_TEST, handler_none),
 )
 
 
@@ -81,6 +107,10 @@ def main():
 
     # Process command line arguments
     command = process_cli_arguments(conn)
+
+    if conn.command_requires_parameter(command) and len(conn.config_param) < 1:
+        print >> sys.stderr, "Selected command requires parameter (use -x ####)"
+        usage(EXIT_BAD_REQUEST)
     
     # Use configuration file to configure connection
     conn.connect(conn.config_host, conn.config_port, conn.config_password)
@@ -88,7 +118,10 @@ def main():
     # This is a function we call after our initial command processing
     command_callback = None
 
+    iter_count = 0
+
     while True:
+        iter_count += 1
         try:
             # Determine whether we are still connected
             state = conn.connection_state()
@@ -117,8 +150,14 @@ def main():
                 # If we have already issued a command
                 else:
                     # Ask the post-command handler if we are ready to terminate
-                    if command_callback(conn):
+                    term = command_callback(conn, iter_count * RUNLOOP_INTERVAL_RAPID)
+                    if term is True:
                         sys.exit(EXIT_SUCCESS)
+                    elif term is False:
+                        sys.exit(EXIT_ALARM_NOT_READY)
+                    else:
+                        # If term is NoneType, then try another runloop
+                        pass 
 
                 # Runloop
                 time.sleep(RUNLOOP_INTERVAL_RAPID)
@@ -140,9 +179,15 @@ def usage(exit_code):
 
     '''
     print >> sys.stderr, ""
-    print >> sys.stderr, "Usage: %(script)s COMMAND [-p PIN] [-c config_file] [-f]" % {'script': sys.argv[0]}
+    print >> sys.stderr, "Usage: %(script)s COMMAND [-p PIN] [-c config_file] [-f] [-x extra-parameter] [-j]" % {'script': sys.argv[0]}
     print >> sys.stderr, ""
     print >> sys.stderr, "Available commands: " + ", ".join([i[1] for i in AdemcoServer.ADEMCO_COMMANDS])
+    print >> sys.stderr, ""
+    print >> sys.stderr, "* [-p PIN]: Provide your 4-digit security PIN (required for most commands)"
+    print >> sys.stderr, "* [-c config_file]: Specify a configuration file"
+    print >> sys.stderr, "* [-f]: Force command to be sent without first checking for READY"
+    print >> sys.stderr, "* [-x extra_parameter]: Provide a parameter for the command (e.g., bypass zone #)"
+    print >> sys.stderr, "* [-j]: Output JSON (used for status only)"
     sys.exit(exit_code)
 
 
@@ -150,7 +195,7 @@ def process_cli_arguments(ademcoServer):
 
     # Get any options on the command line
     try:
-        opts, args = getopt.getopt(sys.argv[2:], "fp:c:", ["pin", "config"])
+        opts, args = getopt.getopt(sys.argv[2:], "jfp:c:x:", ["pin", "config"])
     except getopt.GetoptError as err:
         print >> sys.stderr, str(err)
         usage(EXIT_BAD_REQUEST)
@@ -166,8 +211,16 @@ def process_cli_arguments(ademcoServer):
                 assert False, "PIN must be 4 digits"
             ademcoServer.code = value
 
+        elif option == "-x":
+            assert len(value) >= 1, "Parameter must be provided"
+
+            ademcoServer.config_param = value
+
         elif option == "-f":
             ademcoServer.config_force = True
+
+        elif option == "-j":
+            ademcoServer.config_use_json = True
 
         elif option == "-c":
             config_file_name = value
@@ -220,7 +273,7 @@ def process_cli_command(ademcoServer, command_id):
 
     try:
         handler = handlers[command_id]
-        ademcoServer.issue_command(command_id)
+        ademcoServer.issue_command(command_id, ademcoServer.config_param)
         ademcoServer.clear_responses()
         return handler
     except IndexError:

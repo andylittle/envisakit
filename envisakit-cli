@@ -20,9 +20,11 @@ pushd $DIR/cli &> /dev/null
 if [ -f "$DIR/cli/envisalink-ademco-config.json" ] ; then
 	>&2 echo "Using ademco interface..."
 	./ademco.py $@
+	exit $?
 else
 	>&2 echo "Using EZMobile interface..."
 	./envisakit.py $@
+	exit $?
 fi
 
 

@@ -102,9 +102,72 @@ class AdemcoResponse:
 
         return ready
 
+    def update_is_bypass(self):
+        assert self.response_type() == self.RESPONSE_UPDATE, "Method is only for update response types"
+
+        bitfield = self.bitfield_from_index(self.INDEX_UPDATE_STATE_BITFIELD)
+        bypass = has_flag(bitfield, self.UPDATE_FLAG_BYPASS)
+
+        return bypass
+
     def update_text(self):
         assert self.response_type() == self.RESPONSE_UPDATE, "Method is only for update response types"
         return self.response_data[self.INDEX_UPDATE_ALPHA]
+
+    def update_dict(self):
+        assert self.response_type() == self.RESPONSE_UPDATE, "Method is only for update response types"
+
+        bitfield = self.bitfield_from_index(self.INDEX_UPDATE_STATE_BITFIELD)
+        update_dict = {}
+
+        update_dict["ready"] = has_flag(bitfield, self.UPDATE_FLAG_READY)
+
+        update_dict["in_alarm"] = has_flag(bitfield, self.UPDATE_FLAG_IN_ALARM) or \
+            has_flag(bitfield, self.UPDATE_FLAG_ALARM_FIRE) or \
+            has_flag(bitfield, self.UPDATE_FLAG_FIRE)
+
+        update_dict["alarm_in_memory"] = has_flag(bitfield, self.UPDATE_FLAG_ALARM_IN_MEMORY)
+
+        update_dict["fire"] = has_flag(bitfield, self.UPDATE_FLAG_FIRE) or \
+            has_flag(bitfield, self.UPDATE_FLAG_ALARM_FIRE)
+
+        update_dict["chime"] = has_flag(bitfield, self.UPDATE_FLAG_CHIME)
+
+        if has_flag(bitfield, self.UPDATE_FLAG_ARMED_AWAY):
+            update_dict["arm-mode"] = "away"
+            update_dict["armed"] = True
+        elif has_flag(bitfield, self.UPDATE_FLAG_ARMED_STAY):
+            if "night" in self.update_text().lower():
+                update_dict["arm-mode"] = "night"
+            else:
+                update_dict["arm-mode"] = "stay"
+            update_dict["armed"] = True
+        elif has_flag(bitfield, self.UPDATE_FLAG_ARMED_STAY):
+            update_dict["arm-mode"] = "stay"
+            update_dict["armed"] = True
+        elif has_flag(bitfield, self.UPDATE_FLAG_ARMED):
+            update_dict["arm-mode"] = "armed"
+            update_dict["armed"] = True
+        else:
+            update_dict["armed"] = False
+            update_dict["arm-mode"] = "disarmed"
+
+        update_dict["faulted"] = (
+            not update_dict["ready"]) and (
+                (not update_dict["armed"]) and
+                (not update_dict["in_alarm"]) and
+                (not update_dict["alarm_in_memory"])
+        )
+
+        if update_dict["faulted"]:
+            update_dict["faulted-zone"] = self.response_data[self.INDEX_UPDATE_USERZONE]
+
+        update_dict["ac-present"] = has_flag(bitfield, self.UPDATE_FLAG_AC_PRESENT)
+        update_dict["bypassed"] = has_flag(bitfield, self.UPDATE_FLAG_BYPASS)
+        update_dict["low-battery"] = has_flag(bitfield, self.UPDATE_FLAG_LOWBAT)
+        update_dict["system-trouble"] = has_flag(bitfield, self.UPDATE_FLAG_SYSTEM_TROUBLE)
+
+        return update_dict
 
     def update_summary(self):
         assert self.response_type() == self.RESPONSE_UPDATE, "Method is only for update response types"
@@ -115,7 +178,7 @@ class AdemcoResponse:
         if has_flag(bitfield, self.UPDATE_FLAG_READY):
             summary += 'Ready' + '\n'
 
-        if has_flag(bitfield, self.UPDATE_FLAG_ALARM):
+        if has_flag(bitfield, self.UPDATE_FLAG_IN_ALARM):
             summary += '*** ALARM ***' + '\n'
 
         if has_flag(bitfield, self.UPDATE_FLAG_ALARM_IN_MEMORY):
