@@ -15,7 +15,7 @@ fi
 source $DIR/venv/bin/activate
 
 # Navigate to directory
-pushd '$DIR' &> /dev/null
+pushd "$DIR" &> /dev/null
 
 # Issue command
 if [ -f "$DIR/$CONFIG_FILE" ] ; then
