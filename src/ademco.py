@@ -201,7 +201,7 @@ def process_cli_arguments(ademcoServer):
         usage(EXIT_BAD_REQUEST)
 
     # Default configuration file name
-    config_file_name = "envisalink-ademco-config.json"
+    config_file_name = "envisakit-config.json"
 
     # Change configuration file name if specified
     for option, value in opts:

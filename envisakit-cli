@@ -2,8 +2,9 @@
 
 # Get current directory
 # Source: http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
-
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+EXEC_FILE="./src/ademco.py"
+CONFIG_FILE="envisakit-config.json"
 
 if ! [ -d "$DIR/venv" ] ; then
 	echo "You must set up your virtualenv in $DIR/venv before running this command."
@@ -13,21 +14,16 @@ fi
 # Activate the virtualenv
 source $DIR/venv/bin/activate
 
-# Move pwd to the cli directory
-pushd $DIR/cli &> /dev/null
+# Navigate to directory
+pushd '$DIR' &> /dev/null
 
 # Issue command
-if [ -f "$DIR/cli/envisalink-ademco-config.json" ] ; then
-	>&2 echo "Using ademco interface..."
-	./ademco.py $@
+if [ -f "$DIR/$CONFIG_FILE" ] ; then
+	$EXEC_FILE $@
 	exit $?
 else
-	>&2 echo "Using EZMobile interface..."
-	./envisakit.py $@
-	exit $?
+	echo "Set up your $CONFIG_FILE file before running this command."
+	exit 1
 fi
 
-
-
-# Undo pwd change
 popd &> /dev/null

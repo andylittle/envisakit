@@ -1,5 +1,6 @@
 # Configuration files
 envisalink-*config.json
+envisakit-*config.json
 
 # Virtualenv
 venv
