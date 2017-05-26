@@ -4,14 +4,6 @@ EnvisaKit is a command-line interface for the [Eyez-On Envisalink](http://www.ey
 
 **Note**: This project _is not_ compatible with DSC security panels.
 
-# HomeKit and Siri
-
-Connect EnvisaKit to HomeKit in order to control your alarm panel through Siri.
-
-1. Install EnvisaKit (see below)
-2. Install [HomeBridge](https://github.com/nfarina/homebridge)
-3. Install the [homebridge-envisakit plugin](https://github.com/andylittle/homebridge-envisakit)
-
 # Installation
 
 ```
