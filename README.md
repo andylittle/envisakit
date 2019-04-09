@@ -1,3 +1,5 @@
+This is not mine, I was using it and the repository went away. I don't use it any more.
+
 # EnvisaKit
 
 EnvisaKit is a command-line interface for the [Eyez-On Envisalink](http://www.eyezon.com) module with Honeywell Vista panels. It allows you to arm and disarm the alarm system, as well as custom commands.
